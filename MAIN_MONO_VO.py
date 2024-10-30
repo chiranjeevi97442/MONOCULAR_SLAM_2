@@ -15,9 +15,19 @@ import matplotlib.pyplot as plt
 
 def process_frames(img_list):
     
+    ##ORB_descreptors_and_Feature_matchinig
+    detect=cv2.ORB_create()
+    
+    
     I1 = cv2.cvtColor(img_list[0], cv2.COLOR_BGR2GRAY)
     I2 = cv2.cvtColor(img_list[1], cv2.COLOR_BGR2GRAY)
-
+    
+    key_pt_1,desc_1=detect.detectAndCompute(I1,None)
+    key_pt_2,desc_2=detect.detectAndCompute(I2,None)
+    I1=cv2.drawKeypoints(I1,key_pt_1, I1)
+    I2=cv2.drawKeypoints(I2,key_pt_2, I2)
+    
+    return I1,I2
 
 
 
@@ -36,6 +46,7 @@ def main():
             else:
                 continue
             IMG_LIST.pop(0)
+            F1,F2=process_frames(IMG_LIST)
             cv2.imshow("DISPLAYING_IMAGE",frame)
             
             if cv2.waitKey(1)==ord('q'):
