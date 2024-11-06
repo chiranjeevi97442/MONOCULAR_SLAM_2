@@ -8,12 +8,14 @@ Created on Tue Oct 29 07:51:35 2024
 
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+import os
 
 
 def BF_FeatureMatcher(des1,des2):
     brute_force = cv2.BFMatcher(cv2.NORM_HAMMING,crossCheck=True)
-    no_of_matches = brute_force.match(des1,des2)
+    #no_of_matches = brute_force.match(des1,des2)
+    no_of_matches = brute_force.knnMatch(des1,des2,k=2)
  
     # finding the humming distance of the matches and sorting them
     no_of_matches = sorted(no_of_matches,key=lambda x:x.distance)
@@ -31,10 +33,14 @@ def process_frames(img_list):
     
     key_pt_1,desc_1=detect.detectAndCompute(I1,None)
     key_pt_2,desc_2=detect.detectAndCompute(I2,None)
+    
+    
+    
     good_matches=BF_FeatureMatcher(desc_1, desc_2)
     tot_good_matches=len(good_matches)
     out_put_image=cv2.drawMatches(I1, key_pt_1, I2, 
             key_pt_2, good_matches[:10], None, flags=2)
+    print("length of key_pt_1 and key_pt_2",len(key_pt_1),len(key_pt_2))     
     I1=cv2.drawKeypoints(I1,key_pt_1, I1)
     I2=cv2.drawKeypoints(I2,key_pt_2, I2)
     print("total number of matches",tot_good_matches)
@@ -59,8 +65,8 @@ def main():
                 continue
             IMG_LIST.pop(0)
             
-            #cv2.imshow("keypoints_image_1",cv2.resize(F1, (960,540)))
-            #cv2.imshow("keypoints_image_2",cv2.resize(F2,(960,540)))
+            cv2.imshow("keypoints_image_1",cv2.resize(F1, (960,540)))
+            cv2.imshow("keypoints_image_2",cv2.resize(F2,(960,540)))
             cv2.imshow("outputimages", cv2.resize(output,(1920,1080)))
             #cv2.imshow("DISPLAYING_IMAGE",frame)
             
@@ -73,6 +79,9 @@ def main():
 
 
 if __name__=="__main__":
+    F= int(os.getenv("F","500"))
+    W, H = 1920//2, 1080//2
+    K = np.array([[F,0,W//2],[0,F,H//2],[0,0,1]])
     main()
     
 
