@@ -52,7 +52,9 @@ def process_frames(img_list):
     good_matches=BF_FeatureMatcher(desc_1, desc_2)
     #print("good_matches",good_matches[:10])
     tot_good_matches=len(good_matches)
-    print("key_pt_1",key_pt_1)
+    print("type(key_pt_1)",type(key_pt_1))
+    print("type(good)",good_matches)
+    
     out_put_image=cv2.drawMatches(I1, key_pt_1, I2, 
             key_pt_2, good_matches[:10], None, flags=2)
     #print("length of key_pt_1 and key_pt_2",len(key_pt_1),len(key_pt_2))     
@@ -72,6 +74,14 @@ def process_frames_1(img_list):
     #print(len(key_pts_1),len(key_pts_2))
     #print(len(des_1),len(des_2))
     
+    def array_to_keypoints(points):
+        return [cv2.KeyPoint(x=int(pt[0]), y=int(pt[1]), size=1) for pt in points]
+   
+    def convert_to_dmatches(matches):
+        #print("matches",matches[0][0],matches[1][0])
+        
+        return [cv2.DMatch(_queryIdx=match[0], _trainIdx=match[1], _distance=0.0) for match in matches]    
+    
     
     def GOOD_MATCHES(des1,des2):
         bf=cv2.BFMatcher(cv2.NORM_HAMMING)
@@ -83,15 +93,32 @@ def process_frames_1(img_list):
                                 
         return GOOD
     
-    good_matches=GOOD_MATCHES(des_1, des_2)
-    #print("good_matches",len(good_matches))
-    #print("lenght of key_pts_1",len(key_pts_1))
-    #print("lenght of key_pts_2",len(key_pts_2))
-    print("key_pt_1",key_pts_1)
-    output=cv2.drawMatches(I1, key_pts_1, I2, key_pts_2, good_matches[:10], None, flags=2)
+    def draw_MATCHES_MANUEL(img1,key_pts_1,img2,key_pts_2,matches):
+        
+        img1=cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+        img2=cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+        
+        IMAGE_WHOLE=np.concatenate((img1,img2),axis=1)
+        New_key_pts_2=np.zeros([len(key_pts_2),2])
+        New_key_pts_2[:,1]+=1920
+        for i in range(len(matches)):
+            pt1=key_pts_1[i]
+            pt2=key_pts_1[i]+New_key_pts_2[i]
+            print("pt1",pt1)
+            print("pt2",pt2)
+            color=(0,0,255)
+            cv2.line(IMAGE_WHOLE, (int(pt1[1]),int(pt1[0])), (int(pt2[1]),int(pt2[0])), color)
+        return IMAGE_WHOLE
     
-    I1=cv2.drawKeypoints(I1,key_pts_1, I1)
-    I2=cv2.drawKeypoints(I2,key_pts_2, I2)
+    good_matches=GOOD_MATCHES(des_1, des_2)
+    K_PT_1=array_to_keypoints(key_pts_1)
+    K_PT_2=array_to_keypoints(key_pts_2)
+    output=None
+    #output=cv2.drawMatches(I1, K_PT_1, I2, K_PT_2, good_matches[:10], None, flags=2)
+    output=draw_MATCHES_MANUEL(I1,key_pts_1,I2,key_pts_2,good_matches[:10])
+    
+    I1=cv2.drawKeypoints(I1,K_PT_1, I1)
+    I2=cv2.drawKeypoints(I2,K_PT_2, I2)
     
     
     return I1,I2,output
@@ -109,7 +136,7 @@ def main():
         if ret:
             IMG_LIST.append(frame)
             if len(IMG_LIST)==2:
-                F1,F2,output=process_frames_1(IMG_LIST)
+                F1,F2,output=process_frames(IMG_LIST)
             else:
                 continue
             IMG_LIST.pop(0)
