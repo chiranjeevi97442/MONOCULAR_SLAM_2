@@ -83,13 +83,29 @@ def process_frames_1(img_list):
         return [cv2.DMatch(_queryIdx=match[0], _trainIdx=match[1], _distance=0.0) for match in matches]    
     
     
-    def GOOD_MATCHES(des1,des2):
+    def GOOD_MATCHES(KP_1,KP_2,des1,des2):
         bf=cv2.BFMatcher(cv2.NORM_HAMMING)
         matches=bf.knnMatch(des1,des2,k=2)
         GOOD=[]
+        ret=[]
+        x1,x2=[],[]
+        #this is lowe
         for m,n in matches:
             if m.distance < 0.75*n.distance:
                 GOOD.append([m])
+                pts1=key_pts_1[m.queryIdx]
+                pts2=key_pts_2[m.trainIdx]
+                
+                if np.linalg.norm((pts1-pts2)) < 0.1*np.linalg.norm([1920,1080]) and m.distance<32:
+                    if m.queryIdx not in x1 and m.trainIdx not in x2:
+                        x1.append(m.queryIdx)
+                        x2.append(m.trainIdx)
+                        
+                        ret.append((pts1,pts2))
+                    
+                
+                
+                
                                 
         return GOOD
     
@@ -104,13 +120,13 @@ def process_frames_1(img_list):
         for i in range(len(matches)):
             pt1=key_pts_1[i]
             pt2=key_pts_1[i]+New_key_pts_2[i]
-            print("pt1",pt1)
-            print("pt2",pt2)
+            #print("pt1",pt1)
+            #print("pt2",pt2)
             color=(0,0,255)
             cv2.line(IMAGE_WHOLE, (int(pt1[1]),int(pt1[0])), (int(pt2[1]),int(pt2[0])), color)
         return IMAGE_WHOLE
     
-    good_matches=GOOD_MATCHES(des_1, des_2)
+    good_matches=GOOD_MATCHES(key_pts_1,key_pts_2,des_1, des_2)
     K_PT_1=array_to_keypoints(key_pts_1)
     K_PT_2=array_to_keypoints(key_pts_2)
     output=None
@@ -133,10 +149,13 @@ def main():
     
     while True:
         ret,frame=CAP.read()
+        #print("frame_Shape",frame.shape)
         if ret:
             IMG_LIST.append(frame)
             if len(IMG_LIST)==2:
-                F1,F2,output=process_frames(IMG_LIST)
+                F1,F2,output=process_frames_1(IMG_LIST)
+                #print("F1_shape",F1.shape)
+                #print("output_shape",output.shape)
             else:
                 continue
             IMG_LIST.pop(0)
