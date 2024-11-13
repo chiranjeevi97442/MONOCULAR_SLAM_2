@@ -11,6 +11,10 @@ import cv2
 #import matplotlib.pyplot as plt
 import os
 
+from skimage.measure import ransac
+from skimage.transform import FundamentalMatrixTransform
+from skimage.transform import EssentialMatrixTransform
+
 
 def BF_FeatureMatcher(des1,des2):
     brute_force = cv2.BFMatcher(cv2.NORM_HAMMING,crossCheck=True)
@@ -89,20 +93,39 @@ def process_frames_1(img_list):
         GOOD=[]
         ret=[]
         x1,x2=[],[]
-        #this is lowe
+        #this is lowe's Ratio test
         for m,n in matches:
             if m.distance < 0.75*n.distance:
                 GOOD.append([m])
                 pts1=key_pts_1[m.queryIdx]
                 pts2=key_pts_2[m.trainIdx]
-                
+                # travel less than 10% of diagonal and within orb distance 32
                 if np.linalg.norm((pts1-pts2)) < 0.1*np.linalg.norm([1920,1080]) and m.distance<32:
                     if m.queryIdx not in x1 and m.trainIdx not in x2:
                         x1.append(m.queryIdx)
                         x2.append(m.trainIdx)
                         
                         ret.append((pts1,pts2))
-                    
+                        
+        assert(len(x1))==len(x1)
+        assert(len(x2))==len(x2)
+
+        assert len(ret)>=8
+        ret=np.array(ret)
+        x1=np.array(x1)
+        x2=np.array(x2)
+        
+        #finding the fundamental matrix and rejecting the outliers
+        model,f_pts=ransac((ret[:,0],ret[:,1]),
+                           FundamentalMatrixTransform,
+                           min_samples=8,
+                           residual_threshold=0.001,
+                           max_trails=100)
+        
+        
+        
+        
+                            
                 
                 
                 
