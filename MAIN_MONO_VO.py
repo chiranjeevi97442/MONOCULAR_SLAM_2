@@ -16,6 +16,8 @@ from skimage.transform import FundamentalMatrixTransform
 from skimage.transform import EssentialMatrixTransform
 
 
+
+
 def BF_FeatureMatcher(des1,des2):
     brute_force = cv2.BFMatcher(cv2.NORM_HAMMING,crossCheck=True)
     no_of_matches = brute_force.match(des1,des2)
@@ -86,7 +88,44 @@ def process_frames_1(img_list):
         
         return [cv2.DMatch(_queryIdx=match[0], _trainIdx=match[1], _distance=0.0) for match in matches]    
     
-    
+    def extract_RT(F):
+        """
+        check this link:https://www-users.cse.umn.edu/~hspark/CSci5980/Lec12_CameraPoseEstimation.pdf
+        if we use cv2.recoverpose the essential
+        or fundamentqalmatrix along with the recover pose we can compute
+        the r,t value internally  it also do the same as we did here
+
+        Parameters
+        ----------
+        model.params : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        R,T value based on the given fundamental matrix 
+
+        """
+        #chairalitty of pose recovery
+        W=np.mat([[0,-1,0],[1,0,0],[0,0,1]],dtype=float)
+        Z=np.array([[0,1,0],[-1,0,0],[0,0,0]])
+        
+        U,d,Vt=np.linalg.svd(F)
+        if np.linalg.det(Vt)<0:
+            Vt*=-1.0
+            
+        R=np.dot(np.dot(U,W),Vt)
+        t=U[:,2]
+        
+        t1=(U@Z.T)@U.T
+        
+        ret=np.eye(4)
+        ret[:3,:3]=R
+        ret[:3,3]=t
+        
+        return ret
+        
+        
+        
     def GOOD_MATCHES(KP_1,KP_2,des1,des2):
         bf=cv2.BFMatcher(cv2.NORM_HAMMING)
         matches=bf.knnMatch(des1,des2,k=2)
@@ -128,7 +167,7 @@ def process_frames_1(img_list):
                             
                 
                 
-                
+        Rt=extract_RT(model.params)        
                                 
         return GOOD
     
