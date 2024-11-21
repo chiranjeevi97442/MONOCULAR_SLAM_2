@@ -150,16 +150,30 @@ def process_frames_1(img_list):
         assert(len(x2))==len(x2)
 
         assert len(ret)>=8
-        ret=np.array(ret)
-        x1=np.array(x1)
-        x2=np.array(x2)
+        ret=np.array(ret).astype(np.float32)
+        x1=np.array(x1).astype(np.float32)
+        x2=np.array(x2).astype(np.float32)
         
         #finding the fundamental matrix and rejecting the outliers
-        model,f_pts=ransac((ret[:,0],ret[:,1]),
-                           FundamentalMatrixTransform,
+        print("ransac_data_type_1",type(ret[:,0]))
+        print("ransac_data_type_2",type(ret[:,1]))
+        
+        print("data_1_shape",ret[:,0].shape)
+        print("data_2_shape",ret[:,1].shape)
+        
+        
+        print("len(ret)_______",len(ret))
+        print("len(ret)_______0",ret[:,0][:5])
+        print("len(ret)_______1",ret[:,1][:5])
+        
+        model,f_pts=ransac(
+                           (ret[:,0],ret[:,1]),
+                           FundamentalMatrixTransform(),
+                           #EssentialMatrixTransform,
                            min_samples=8,
                            residual_threshold=0.001,
-                           max_trails=100)
+                           max_trials=100,
+                           )
         
         
         
