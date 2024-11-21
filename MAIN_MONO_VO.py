@@ -166,6 +166,8 @@ def process_frames_1(img_list):
         print("len(ret)_______0",ret[:,0][:5])
         print("len(ret)_______1",ret[:,1][:5])
         
+        
+        """
         model,f_pts=ransac(
                            (ret[:,0],ret[:,1]),
                            FundamentalMatrixTransform(),
@@ -174,15 +176,16 @@ def process_frames_1(img_list):
                            residual_threshold=0.001,
                            max_trials=100,
                            )
-        
-        
-        
-        
-                            
-                
-                
-        Rt=extract_RT(model.params)        
-                                
+      
+        Rt=extract_RT(model.params)
+        """
+        try:
+            
+            E,mask=cv2.findEssentialMat(ret[:,0],ret[:,1],np.array([[500,0,960],[0,500,540],[0,0,1]]))
+            RT=extract_RT(E)
+        except:
+            print("unable tyo copte the Essentil matyrix")
+                         
         return GOOD
     
     def draw_MATCHES_MANUEL(img1,key_pts_1,img2,key_pts_2,matches):
