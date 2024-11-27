@@ -43,6 +43,7 @@ def feature_mapping(img):
 
 def process_frames(img_list):
     
+    
      ##ORB_descreptors_and_Feature_matchinig
     detect=cv2.ORB_create()
     #print("lenght of image list",len(img_list))
@@ -230,9 +231,10 @@ def process_frames_1(img_list):
         K=np.array([[500,0,960],[0,500,540],[0,0,1]])
         E,mask=cv2.findEssentialMat(pts1, pts2, K)
         RT=extract_RT(E)
-        _,R,t, _=cv2.recoverPose(E, pts1, pts2, K)
-        RT_ACTUAL= _form_transf(R,np.squeeze(t))
-         
+        _,R,t, _= cv2.recoverPose(E, pts1, pts2, K)
+        RT_ACTUAL =  _form_transf(R,np.squeeze(t))
+        
+        
              
         return RT_ACTUAL   
     
@@ -255,7 +257,14 @@ def process_frames_1(img_list):
     
     good_matches,X_1,X_2=GOOD_MATCHES(key_pts_1,key_pts_2,des_1, des_2)
     
+    
     R_T=FIND_RT(X_1, X_2)
+    
+    
+    RT_ACTUAL_INV = np.linalg.inv(R_T)
+    relative_poses.append(RT_ACTUAL_INV)
+    poses.append(poses[-1] @ relative_poses[-1]) 
+    
     
     K_PT_1=array_to_keypoints(key_pts_1)
     K_PT_2=array_to_keypoints(key_pts_2)
@@ -276,6 +285,7 @@ def process_frames_1(img_list):
 def main():
     IMG_LIST=[]
     CAP=cv2.VideoCapture(r"test_countryroad.mp4")
+    
     
     while True:
         ret,frame=CAP.read()
@@ -304,6 +314,14 @@ def main():
 
 
 if __name__=="__main__":
+    global poses
+    
+    global relative_poses
+    
+    relative_poses=[]
+    initial_pose=np.eye(4)
+    poses=[initial_pose]
+    
     F= int(os.getenv("F","500"))
     W, H = 1920//2, 1080//2
     K = np.array([[F,0,W//2],[0,F,H//2],[0,0,1]])
