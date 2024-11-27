@@ -15,6 +15,7 @@ from skimage.measure import ransac
 from skimage.transform import FundamentalMatrixTransform
 from skimage.transform import EssentialMatrixTransform
 
+np.set_printoptions(formatter={"float": lambda x: "{0:0.3f}".format(x)})
 
 
 
@@ -82,11 +83,13 @@ def process_frames_1(img_list):
     
     def array_to_keypoints(points):
         return [cv2.KeyPoint(x=int(pt[0]), y=int(pt[1]), size=1) for pt in points]
-   
+    
+    
     def convert_to_dmatches(matches):
         #print("matches",matches[0][0],matches[1][0])
         
-        return [cv2.DMatch(_queryIdx=match[0], _trainIdx=match[1], _distance=0.0) for match in matches]    
+        return [cv2.DMatch(_queryIdx=match[0], _trainIdx=match[1], _distance=0.0) for match in matches] 
+    
     
     def extract_RT(F):
         """
@@ -155,16 +158,16 @@ def process_frames_1(img_list):
         x2=np.array(x2).astype(np.float32)
         
         #finding the fundamental matrix and rejecting the outliers
-        print("ransac_data_type_1",type(ret[:,0]))
-        print("ransac_data_type_2",type(ret[:,1]))
+        #print("ransac_data_type_1",type(ret[:,0]))
+        #print("ransac_data_type_2",type(ret[:,1]))
         
-        print("data_1_shape",ret[:,0].shape)
-        print("data_2_shape",ret[:,1].shape)
+        #print("data_1_shape",ret[:,0].shape)
+        #print("data_2_shape",ret[:,1].shape)
         
         
-        print("len(ret)_______",len(ret))
-        print("len(ret)_______0",ret[:,0][:5])
-        print("len(ret)_______1",ret[:,1][:5])
+        #print("len(ret)_______",len(ret))
+        #print("len(ret)_______0",ret[:,0][:5])
+        #qprint("len(ret)_______1",ret[:,1][:5])
         
         
         """
@@ -178,15 +181,60 @@ def process_frames_1(img_list):
                            )
       
         Rt=extract_RT(model.params)
-        """
+        
         try:
             
             E,mask=cv2.findEssentialMat(ret[:,0],ret[:,1],np.array([[500,0,960],[0,500,540],[0,0,1]]))
+            #print("RRRR",E)
             RT=extract_RT(E)
+            #print("RT_VALUES_Function",RT)
+            _, R,t, _=cv2.recoverPose(E,ret[:,0],ret[:,1],K)
+            
+            #print("R values+++++++++++++++",R)
+            #print("RT_VALUES",RT[:3,3])
+            
+            
         except:
-            print("unable tyo copte the Essentil matyrix")
-                         
-        return GOOD
+            print("unable to compute the Essential matyrix")
+        """               
+        return GOOD, ret[:,0],ret[:,1]
+    
+    
+    def _form_transf(R, t):
+        """
+        Makes a transformation matrix from the given rotation matrix and translation vector
+    
+        Parameters
+        ----------
+        R (ndarray): The rotation matrix
+        t (list): The translation vector
+    
+        Returns
+        -------
+        T (ndarray): The transformation matrix
+        """
+        T = np.eye(4, dtype=np.float64)
+        
+        T[:3, :3] = R
+        T[:3, 3] = t
+        return T
+        
+    def FIND_RT(pts1,pts2):
+        """
+        computing the R,t by taking the matches and camera intrinsic parameters
+        
+        """
+        
+        
+        RT_ACTUAL=np.eye(4)
+        K=np.array([[500,0,960],[0,500,540],[0,0,1]])
+        E,mask=cv2.findEssentialMat(pts1, pts2, K)
+        RT=extract_RT(E)
+        _,R,t, _=cv2.recoverPose(E, pts1, pts2, K)
+        RT_ACTUAL= _form_transf(R,np.squeeze(t))
+         
+             
+        return RT_ACTUAL   
     
     def draw_MATCHES_MANUEL(img1,key_pts_1,img2,key_pts_2,matches):
         
@@ -205,7 +253,10 @@ def process_frames_1(img_list):
             cv2.line(IMAGE_WHOLE, (int(pt1[1]),int(pt1[0])), (int(pt2[1]),int(pt2[0])), color)
         return IMAGE_WHOLE
     
-    good_matches=GOOD_MATCHES(key_pts_1,key_pts_2,des_1, des_2)
+    good_matches,X_1,X_2=GOOD_MATCHES(key_pts_1,key_pts_2,des_1, des_2)
+    
+    R_T=FIND_RT(X_1, X_2)
+    
     K_PT_1=array_to_keypoints(key_pts_1)
     K_PT_2=array_to_keypoints(key_pts_2)
     output=None
