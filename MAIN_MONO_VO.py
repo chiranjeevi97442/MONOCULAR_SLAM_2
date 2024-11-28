@@ -277,6 +277,60 @@ def process_frames_1(img_list):
     
     
     return I1,I2,output
+
+def add_ones(pts):
+    
+    return np.hstack([pts,np.ones((pts.shape[0],1))])
+
+
+
+def compute_reprojection_error(intrinsics, extrinsics, points_3d, observations):
+    total_error = 0  # Initialize the total error to zero
+    num_points = 0  # Initialize the number of points to zero
+     
+    # Iterate through each camera's extrinsics and corresponding 2D observations
+    for (rotation, translation), obs in zip(extrinsics, observations):
+        # Project the 3D points to 2D using the current camera's intrinsics and extrinsics
+        projected_points = project_points(points_3d, intrinsics, rotation, translation)
+         
+        # Calculate the Euclidean distance (reprojection error) between the projected points and the observed points
+        error = np.linalg.norm(projected_points - obs, axis=1)
+         
+        # Accumulate the total error
+        total_error += np.sum(error)
+         
+        # Accumulate the total number of points
+        num_points += len(points_3d)
+     
+    # Calculate the mean reprojection error
+    mean_error = total_error / num_points
+     
+    return mean_error  # Return the mean reprojection error
+
+
+def triangulate(pose1,pose2,pts1,pts2):
+    
+    ret=np.zeros((pts1.shape[0],4))
+    
+    pose1=np.linalg.inv(pose1)
+    pose2=np.linalg.inv(pose2)
+    
+    for i, P in enumerate(zip(add_ones(pts1),add_ones(pts2))):
+        
+        A=np.zeros((4,4))
+        
+        A[0]=P[0][0]*pose1[2]-pose1[0]
+        A[1]=P[0][1]*pose1[2]-pose1[1]
+        A[2]=P[1][0]*pose2[2]-pose2[0]
+        A[3]=P[1][1]*pose2[2]-pose2[1]
+        
+        _, _, vt=np.linalg.svd(A)
+        
+        ret[i]=vt[3]
+        
+    return ret     
+    
+    
     
 
 
